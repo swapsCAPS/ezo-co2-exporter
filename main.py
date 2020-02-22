@@ -57,11 +57,11 @@ def send_cmd(cmd):
 		print ("Error, ", e)
 		return None
 
-port  = '/dev/serial0' # change to match your pi's setup
+port  = '/dev/ttyS0' # change to match your pi's setup
 delay = 1
 gauge = Gauge('ezo_co2', 'EZO CO2 Readings')
 
-print( "Opening serial port...")
+print( "Opening serial port...", port)
 try:
 	ser = serial.Serial(port, 9600, timeout=0)
 except serial.SerialException as e:
@@ -78,6 +78,7 @@ print("Polling sensor every %0.2f seconds" % delay)
 start_http_server(8000)
 
 while True:
+	print('polling')
 	send_cmd("R")
 	lines = read_lines()
 	for i in range(len(lines)):
