@@ -45,13 +45,14 @@ start_http_server(8000)
 def read_lines():
     try:
         while True:
-            line = ser.read_until(b"\r", 12)
+            line = ser.read_until(b"\r", 12).decode()
+            print("Received: ", line)
 
-            co2 = int(line)
-            if (line.startsWith("*OK")):
-                continue
-            print(line)
-            print(co2)
+            try:
+                co2 = int(line)
+                gauge.set(co2)
+            except ValueError as e:
+                print("Could not parse", e)
 
     except SerialException as e:
         print( "Error, ", e)
