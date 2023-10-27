@@ -7,41 +7,6 @@ import time
 import string
 from serial import SerialException
 
-def read_line():
-	"""
-	taken from the ftdi library and modified to
-	use the ezo line separator "\r"
-	"""
-	lsl = len('\r')
-	line_buffer = []
-	while True:
-		next_char = ser.read(1)
-		if next_char == '':
-			break
-		line_buffer.append(next_char)
-		if (len(line_buffer) >= lsl and
-				line_buffer[-lsl:] == list('\r')):
-			break
-	return ''.join(line_buffer)
-
-def read_lines():
-	"""
-	also taken from ftdi lib to work with modified readline function
-	"""
-	lines = []
-	try:
-		while True:
-			line = read_line()
-			if not line:
-				break
-				ser.flush_input()
-			lines.append(line)
-		return lines
-
-	except SerialException as e:
-		print( "Error, ", e)
-		return None
-
 def send_cmd(cmd):
 	"""
 	Send command to the Atlas Sensor.
@@ -63,12 +28,12 @@ gauge = Gauge('ezo_co2', 'EZO CO2 Readings')
 
 print( "Opening serial port...", port)
 try:
-	ser = serial.Serial(port, 9600, timeout=0)
+	ser = serial.Serial(port, 9600, timeout=10000)
 except serial.SerialException as e:
 	print( "Could not open serial, ", e)
 	sys.exit(0)
 
-send_cmd("C,0") # turn off continuous mode
+send_cmd("C,5") # turn on continuous mode
 #clear all previous data
 time.sleep(1)
 ser.flush()
@@ -77,12 +42,19 @@ print("Polling sensor every %0.2f seconds" % delay)
 
 start_http_server(8000)
 
-while True:
-	print('polling')
-	send_cmd("R")
-	lines = read_lines()
-	for i in range(len(lines)):
-		if lines[i][0] != '*':
-			print(lines[i])
-			gauge.set(lines[i])
-	time.sleep(delay)
+def read_lines():
+	try:
+		while True:
+			line = ser.read_until(b"\r", 12)
+
+			co2 = int(line)
+            if (line.startsWith("*OK")):
+				continue
+			print(line)
+			print(co2)
+
+	except SerialException as e:
+		print( "Error, ", e)
+		return None
+
+read_lines()
